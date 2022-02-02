@@ -6,7 +6,7 @@
 
 In spite of its age, or more likely thanks to it and to the large amount of research and improvements accumulated in time, *k*-d trees are still a good pragmatical choice to perform knn (*k*-nearest neighbours) operations in many cases.
 
-In this assignment you are required to write a parallel code that builds a $k$-d tree for *k=2*. **You must
+In this assignment you are required to write a parallel code that builds a *k*-d tree for *k=2*. **You must
 implement both the MPI and the OpenMP version**.
 In order to simplify the task, the following 2 assumptions hold:
 
