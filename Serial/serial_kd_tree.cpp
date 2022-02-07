@@ -1,12 +1,15 @@
+#include <chrono>
 #include <iostream>
+#include <random>
 
-/* DATASET ------------------------------------------------------------------ */
+/* -------------------------------- DATASET -------------------------------- */
 template <typename T, short unsigned D = 2, typename I = std::size_t>
 class dataset {
   std::size_t _cardinality;
   T *points;
 
 public:
+  // Creates a 'dataset' with a number 'cardinality' of 'D'-dimensional' points
   dataset(std::size_t cardinality)
       : _cardinality{cardinality}, points{new T[_cardinality * D]} {}
 
@@ -79,7 +82,8 @@ public:
   }
 };
 
-/* TREE --------------------------------------------------------------------- */
+/* ---------------------------------- TREE ----------------------------------
+ */
 template <typename T, short unsigned D = 2, typename I = std::size_t>
 class tree {
   class node {
@@ -101,7 +105,7 @@ class tree {
 
     // Given the first nodes appends recursively to it nodes until all the
     // points of the 'dataset' given are exhausted
-    node *build_nodes(dataset<T> &data, I first, I last) {
+    node *build_nodes(dataset<T> &data, I first, I last, I axis) {
       I size{last - first + 1};
       I median{0};
 
@@ -111,18 +115,20 @@ class tree {
       }
 
       _axis = data.most_spreaded(first, last);
-      data.quick_sort(_axis, first, last);
+      
+      if(_axis != axis) // Big optimization
+        data.quick_sort(_axis, first, last);
+      
       median = first + size / 2;
       _point = data[median];
       // Points on the hyperplane 'axis = point' (?)
 
-      if (size != 2) {
-        auto left_node = new node{};
-        _left = left_node->build_nodes(data, first, median - (median != 0));
-      }
-
+      auto left_node = new node{};
       auto right_node = new node{};
-      _right = right_node->build_nodes(data, median + (median != last), last);
+      _left = (size == 2)
+                  ? left_node
+                  : left_node->build_nodes(data, first, median - (median != 0), _axis);
+      _right = right_node->build_nodes(data, median + (median != last), last, _axis);
 
       return this;
     }
@@ -137,11 +143,44 @@ public:
   // to the first node
   void build_tree(dataset<T> &data) {
     _head = new node{};
-    _head = _head->build_nodes(data, 0, data.cardinality() - 1);
+    _head = _head->build_nodes(data, 0, data.cardinality() - 1, D);
   }
 
   auto head() const noexcept { return _head; }
 };
 
-/* MAIN --------------------------------------------------------------------- */
-int main() { return 0; }
+/* ---------------------------------- MAIN ----------------------------------
+ */
+int main() {
+  using points_type = double;
+  constexpr std::size_t points_num = 100000;
+
+  // Generating an uniform distribution along the 2 directions in a 'dataset'
+  // and measuting the time needed to do it
+  std::default_random_engine generator;
+  std::uniform_real_distribution<points_type> x_distribution(-1.0, 1.0);
+  std::uniform_real_distribution<points_type> y_distribution(-4.0, 4.0);
+
+  dataset<points_type> data(points_num);
+  for (std::size_t i = 0; i < points_num; ++i) {
+    data[i][0] = x_distribution(generator);
+    data[i][1] = y_distribution(generator);
+  }
+
+  // Building a k-d tree using the 'dataset' constructed and measuting the
+  // time needed to do it
+  std::chrono::steady_clock::time_point begin =
+      std::chrono::steady_clock::now();
+  tree<points_type> kd_tree{};
+  kd_tree.build_tree(data);
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+  std::cout << "Time to build the serial tree: "
+            << std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                     begin)
+                       .count() /
+                   1.0e+06
+            << " [s]" << std::endl;
+
+  return 0;
+}
