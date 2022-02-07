@@ -13,7 +13,7 @@ public:
   ~dataset() { delete[] points; }
 
   // Subscripting operator for the 'dataset', it supports the 'dataset[][]'
-  // syntax
+  // syntax (remark: only the 2-dimensional case is supported for now)
   T *operator[](const std::size_t ind) { return &points[ind * D]; }
 
   // Number of points in the 'dataset'
@@ -49,15 +49,15 @@ public:
     return dim;
   }
 
-  // Swaps the points of index 'a' and 'b'
+  // Swaps the multi-dimensional point number 'a' with the multi-dimensional
+  // point number 'b'
   void swap(const I a, const I b) noexcept {
     for (I i = 0; i < D; ++i)
       std::swap((*this)[a][i], (*this)[b][i]);
   }
 
-  // The name explains (almost) everything: sorts the points along the 'axis'
-  // give from the element 'first' to the element 'last', and it does it in
-  // place
+  // Sorts the points of the 'dataset' along the 'axis' given from the element
+  // 'first' to the element 'last', and does it in place
   void quick_sort(const I axis, const I first, const I last) noexcept {
     if (last <= first)
       return;
@@ -81,63 +81,66 @@ public:
 
 /* TREE --------------------------------------------------------------------- */
 template <typename T, short unsigned D = 2, typename I = std::size_t>
-class node {
-  I axis{0};
-  T *_point{nullptr};
-  node *_left{nullptr};
-  node *_right{nullptr};
+class tree {
+  class node {
+    I _axis{0};
+    T *_point{nullptr};
+    node *_left{nullptr};
+    node *_right{nullptr};
+
+  public:
+    ~node() {
+      delete _right;
+      delete _left;
+    }
+
+    auto axis() const noexcept { return _axis; }
+    auto left() const noexcept { return _left; }
+    auto right() const noexcept { return _right; }
+    auto point() const noexcept { return _point; }
+
+    // Given the first nodes appends recursively to it nodes until all the
+    // points of the 'dataset' given are exhausted
+    node *build_nodes(dataset<T> &data, I first, I last) {
+      I size{last - first + 1};
+      I median{0};
+
+      if (size == 1) {
+        _point = data[first];
+        return this;
+      }
+
+      _axis = data.most_spreaded(first, last);
+      data.quick_sort(_axis, first, last);
+      median = first + size / 2;
+      _point = data[median];
+      // Points on the hyperplane 'axis = point' (?)
+
+      if (size != 2) {
+        auto left_node = new node{};
+        _left = left_node->build_nodes(data, first, median - (median != 0));
+      }
+
+      auto right_node = new node{};
+      _right = right_node->build_nodes(data, median + (median != last), last);
+
+      return this;
+    }
+  };
+
+  node *_head{nullptr};
 
 public:
-  ~node() {
-    delete _right;
-    delete _left;
+  ~tree() { delete _head; }
+
+  // Builds a 'tree', after the 'tree' is built the pointer '_head' will point
+  // to the first node
+  void build_tree(dataset<T> &data) {
+    _head = new node{};
+    _head = _head->build_nodes(data, 0, data.cardinality() - 1);
   }
 
-  T *point() const noexcept { return _point; }
-  node *left() const noexcept { return _left; }
-  node *right() const noexcept { return _right; }
-
-  node *build_tree(dataset<T> &data, I first, I last) {
-    I size{last - first + 1};
-    I median{0};
-
-    if (size == 1) {
-      _point = data[first];
-      return this;
-    }
-
-    if (size == 2) {
-      // std::cout << '!' << std::endl;
-      auto last_node = new node{};
-      axis = data.most_spreaded(first, last);
-      data.quick_sort(axis, first, last);
-
-      if (data[first][axis] > data[last][axis]) {
-        _point = data[last];
-        _left = last_node->build_tree(data, first, first);
-      } else {
-        _point = data[first];
-        _right = last_node->build_tree(data, last, last);
-      }
-      return this;
-    }
-
-    axis = data.most_spreaded(first, last);
-    data.quick_sort(axis, first, last);
-
-    median = first + size / 2;
-    _point = data[median];
-
-    // Points on the hyperplane 'axis = point' (?)
-    auto left_node = new node{};
-    auto right_node = new node{};
-
-    // if(data[first][axis] > data[last][axis])
-    _left = left_node->build_tree(data, first, median - (median != 0));
-    _right = right_node->build_tree(data, median + (median != last), last);
-
-    return this;
-  }
+  auto head() const noexcept { return _head; }
 };
 
 /* MAIN --------------------------------------------------------------------- */
