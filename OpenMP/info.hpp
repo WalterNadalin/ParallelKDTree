@@ -10,6 +10,7 @@ using std::endl;
 using std::string;
 
 void info() noexcept {
+#if defined(_OPENMP)
   auto nthreads = omp_get_num_threads();
 
 #pragma omp single
@@ -48,5 +49,10 @@ void info() noexcept {
 
 #pragma omp single
   cout << "---------------------------------------------------------\n" << endl;
+#else
+  cout << '\n';
+  cout << " Serial version: nothing to see here";
+  cout << '\n' << endl;
+#endif
 }
 #endif
