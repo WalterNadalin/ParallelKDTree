@@ -5,13 +5,16 @@
 
 template <typename T> struct node {
   uint16_t axis;
-  T pnt[2];
+  T *pnt;
   node *left;
   node *right;
+
+  node() : pnt{new T[2]}, left{nullptr}, right{nullptr} {}
 
   ~node() {
     delete right;
     delete left;
+    delete[] pnt;
   }
 
   // Given the first nodes appends recursively to it nodes until all the

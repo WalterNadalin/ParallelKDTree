@@ -12,21 +12,19 @@ using std::chrono::duration_cast;
 using std::chrono::microseconds;
 using std::chrono::steady_clock;
 
-#if defined(_OPENMP)
 int main(int argc, char **argv) {
-#else
-int main() {
-#endif
   using type = double;
-  size_t num = 1 << 22, mdn = num / 2, lenght = num - mdn - 1;
+  size_t num = 1 << 3, mdn = num / 2, length = num - mdn - 1;
   int rank, size, master = 0, slave = 1, send_data = 2, send_pnt = 3;
-  node<type> head;
+  node<type> head{};
   MPI_Status status;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  cout << "I am " << rank << " of " << size << endl;
+
+  cout << "Processor " << rank << endl;
+  type *ptr_1;
 
   if (rank == master) {
     default_random_engine gen;
@@ -39,6 +37,7 @@ int main() {
     for (size_t i = 0; i < num; ++i) {
       data[i][0] = x(gen);
       data[i][1] = y(gen);
+      cout << i << " (" << data[i][0] << ", " << data[i][1] << ')' << endl;
     }
 
     auto axis = data.most_spreaded(0, num - 1);
@@ -46,38 +45,42 @@ int main() {
     head.pnt[0] = data[mdn][0];
     head.pnt[1] = data[mdn][1];
 
-    MPI_Send(&head.pnt, 2, MPI_DOUBLE, slave, send_pnt, MPI_COMM_WORLD);
+    MPI_Send(head.pnt, 2, MPI_DOUBLE, slave, send_pnt, MPI_COMM_WORLD);
 
     auto *ptr_2 = new type[2 * length];
-
+    cout << length << ' ' << mdn << endl;
     for (size_t i = 0; i < length; i++) {
       ptr_2[i * 2] = data[i + mdn + 1][0];
       ptr_2[i * 2 + 1] = data[i + mdn + 1][1];
     }
-    
-    MPI_Send(&ptr_2, 2 * length, MPI_DOUBLE, slave, send_data, MPI_COMM_WORLD);
+ 
+    MPI_Send(ptr_2, 2 * length, MPI_DOUBLE, slave, send_data, MPI_COMM_WORLD);
     
     delete[] ptr_2;
-    
-    auto *ptr_1 = new type[2 * mdn];
-
+ 
+    ptr_1 = new type[2 * mdn];
     for (size_t i = 0; i < mdn; i++) {
       ptr_1[i * 2] = data[i][0];
       ptr_1[i * 2 + 1] = data[i][1];
+      cout << 0 << " (" << ptr_1[i * 2] << ", " << ptr_1[i * 2 + 1] << ')' << endl;
     }
-    
+
     delete[] ptr;
   } else {
-    MPI_Recv(&head.pnt, 2, MPI_DOUBLE, master, send_pnt, MPI_COMM_WORLD, &status);
-    auto *ptr_1 = new type[2 * length];
-    MPI_Recv(&ptr_1, 2, MPI_DOUBLE, master, send_data, MPI_COMM_WORLD, &status);
+    MPI_Recv(head.pnt, 2, MPI_DOUBLE, master, send_pnt, MPI_COMM_WORLD, &status);
+    cout << "head (" << head.pnt[0] << ", " << head.pnt[1] << ')' << endl;
+    ptr_1 = new type[2 * length];
+    MPI_Recv(ptr_1, 2 * length, MPI_DOUBLE, master, send_data, MPI_COMM_WORLD, &status);
+
+    for (size_t i = 0; i < 3; i++) {
+      cout << 1 << " (" << ptr_1[i * 2] << ", " << ptr_1[i * 2 + 1] << ')' << endl;
+    }
   }
   /*    using type = double;
       size_t num = 1 << 22;
       type *pdata = new type[2 * num];
 
-      // Generating an uniform distribution along the 2 directions in a
-    'dataset'
+      // Generating an uniform distribution along the 2 directions in a 'dataset'
       // and measuting the time needed to do it
       default_random_engine gen;
       uniform_real_distribution<type> x(-10.0, 0.0);
@@ -124,8 +127,10 @@ int main() {
       cout << cnt << endl;
 
       delete[] pdata; */
-
+  
   delete[] ptr_1;
+
   MPI_Finalize();
+
   return 0;
 }

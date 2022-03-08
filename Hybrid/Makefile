@@ -1,10 +1,11 @@
 SRC = hybrid.cpp
 
 # The c++ compiler we are using
-CXX = c++
+CXX = mpic++
 
 # The c++ flags we use for compilation
-CXXFLAGS = -Wall -Wextra -g -std=c++14 -O3 -fsanitize=address  
+CXXFLAGS = -Wall -Wextra -g -std=c++14 -O3
+# -fsanitize=address  
 
 # eliminate default suffixes
 .SUFFIXES:
