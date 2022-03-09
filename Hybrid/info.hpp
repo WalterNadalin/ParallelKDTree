@@ -1,14 +1,14 @@
 #ifndef INFO
 #define INFO
 
-#include <iostream>
+#include "node.hpp"
+#include <cstring>
 #include <omp.h>
 #include <string>
 
-using std::cout;
-using std::endl;
 using std::string;
 
+// Prints some information about the threads running
 void info() noexcept {
 #if defined(_OPENMP)
   auto nthreads = omp_get_num_threads();
@@ -53,6 +53,29 @@ void info() noexcept {
   cout << '\n';
   cout << "Serial version: nothing to see here";
   cout << '\n' << endl;
+#endif
+}
+
+// Prints required information evaluating the commands passed throught the
+// command line
+template <typename T> void info(const char *x, const T &tree) noexcept {
+#if defined(_OPENMP)
+  if (!strcmp(x, "all")) {
+#pragma omp parallel proc_bind(close)
+    info();
+    print(tree);
+  } else if (!strcmp(x, "info"))
+#pragma omp parallel proc_bind(close)
+    info();
+  else if (!strcmp(x, "print"))
+    print(tree);
+  else
+    cout << "\nUnknown command passed\n" << endl;
+#else
+  if (!strcmp(x, "print"))
+    print(tree);
+  else
+    cout << "\nUnknown command passed\n" << endl;
 #endif
 }
 #endif

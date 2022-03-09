@@ -1,10 +1,9 @@
 #include "dataset.hpp"
 #include "info.hpp"
-#include "tree.hpp"
+#include "node.hpp"
 #include <chrono>
-#include <cstring>
 #include <random>
-#include <mpi.h>
+//#include <mpi.h>
 
 using std::default_random_engine;
 using std::uniform_real_distribution;
@@ -14,123 +13,73 @@ using std::chrono::steady_clock;
 
 int main(int argc, char **argv) {
   using type = double;
-  size_t num = 1 << 3, mdn = num / 2, length = num - mdn - 1;
-  int rank, size, master = 0, slave = 1, send_data = 2, send_pnt = 3;
-  node<type> head{};
-  MPI_Status status;
+  using node_type = node<type>;
+  int rank, size;
+  int master = 0, slave = 1;
+  int send_data = 0;
+  size_t num = 15, mdn = num / 2;
 
-  MPI_Init(&argc, &argv);
+  /*MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  cout << "Processor " << rank << endl;
-  type *ptr_1;
+  cout << "Processor " << rank << endl; */
+  dataset<type> data{};
 
-  if (rank == master) {
+#if defined(_OPENMP)
+//  if (rank == master) {
+    unique_ptr<node_type> tree{new node_type{}};
+
+    // Generating an uniform distribution along the 2 directions in a 'dataset'
     default_random_engine gen;
     uniform_real_distribution<type> x(-10.0, 0.0);
-    uniform_real_distribution<type> y(0.0, 8.0);
-
-    auto *ptr = new type[2 * num];
-    dataset<type> data(num, ptr);
+    uniform_real_distribution<type> y(0.0, 20.0);
+    dataset<type> tmp(num);
 
     for (size_t i = 0; i < num; ++i) {
-      data[i][0] = x(gen);
-      data[i][1] = y(gen);
-      cout << i << " (" << data[i][0] << ", " << data[i][1] << ')' << endl;
+      tmp[i][0] = x(gen);
+      tmp[i][1] = y(gen);
     }
 
+    data = std::move(tmp);
+    cout << data;
+    cout << endl;
     auto axis = data.most_spreaded(0, num - 1);
     data.sort(axis, 0, num - 1);
-    head.pnt[0] = data[mdn][0];
-    head.pnt[1] = data[mdn][1];
+    tree->pnt[0] = data[mdn][0];
+    tree->pnt[1] = data[mdn][1];
 
-    MPI_Send(head.pnt, 2, MPI_DOUBLE, slave, send_pnt, MPI_COMM_WORLD);
+    dataset<type> upper = data.split(mdn);
+    cout << data;
+    cout << tree;
+    cout << endl;
+    // MPI_Send(upper.points.get(), 2 * upper.cardinality, MPI_DOUBLE, slave,
+    // send_data, MPI_COMM_WORLD);
 
-    auto *ptr_2 = new type[2 * length];
-    cout << length << ' ' << mdn << endl;
-    for (size_t i = 0; i < length; i++) {
-      ptr_2[i * 2] = data[i + mdn + 1][0];
-      ptr_2[i * 2 + 1] = data[i + mdn + 1][1];
+    // Building a k-d tree using the 'dataset' constructed and measuring the
+    // time needed to do it
+    auto begin = omp_get_wtime();
+    unique_ptr<node_type> tree{build(data)};
+    auto end = omp_get_wtime();
+    cout << "Parallel tree time: " << end - begin << " [s]" << endl;
+    info("all", tree);
+//  } else {
+    // int length = num - mdn - 1;
+    // data_ptr = new type[2 * length];
+    // MPI_Recv(data_ptr, 2 * length, MPI_DOUBLE, master, send_data, MPI_COMM_WORLD, &status);
+    // dataset<type> data(data_ptr, length);
+    // cout << data;
     }
- 
-    MPI_Send(ptr_2, 2 * length, MPI_DOUBLE, slave, send_data, MPI_COMM_WORLD);
-    
-    delete[] ptr_2;
- 
-    ptr_1 = new type[2 * mdn];
-    for (size_t i = 0; i < mdn; i++) {
-      ptr_1[i * 2] = data[i][0];
-      ptr_1[i * 2 + 1] = data[i][1];
-      cout << 0 << " (" << ptr_1[i * 2] << ", " << ptr_1[i * 2 + 1] << ')' << endl;
-    }
-
-    delete[] ptr;
-  } else {
-    MPI_Recv(head.pnt, 2, MPI_DOUBLE, master, send_pnt, MPI_COMM_WORLD, &status);
-    cout << "head (" << head.pnt[0] << ", " << head.pnt[1] << ')' << endl;
-    ptr_1 = new type[2 * length];
-    MPI_Recv(ptr_1, 2 * length, MPI_DOUBLE, master, send_data, MPI_COMM_WORLD, &status);
-
-    for (size_t i = 0; i < 3; i++) {
-      cout << 1 << " (" << ptr_1[i * 2] << ", " << ptr_1[i * 2 + 1] << ')' << endl;
-    }
-  }
-  /*    using type = double;
-      size_t num = 1 << 22;
-      type *pdata = new type[2 * num];
-
-      // Generating an uniform distribution along the 2 directions in a 'dataset'
-      // and measuting the time needed to do it
-      default_random_engine gen;
-      uniform_real_distribution<type> x(-10.0, 0.0);
-      uniform_real_distribution<type> y(0.0, 8.0);
-
-      dataset<type> data(num, pdata);
-
-      for (size_t i = 0; i < num; ++i) {
-        data[i][0] = x(gen);
-        data[i][1] = y(gen);
-      }
-
-      tree<type> kdtree;
-
-      // Building a k-d tree using the 'dataset' constructed and measuring the
-      // time needed to do it
-    #if defined(_OPENMP)
-      auto nthreads = (argc > 1) ? atoi(argv[1]) : 4;
-      omp_set_num_threads(nthreads);
-      auto begin = omp_get_wtime();
-      kdtree.build(data);
-      auto end = omp_get_wtime();
-      cout << "Parallel tree: " << end - begin << " [s]" << endl;
-    #else
-      auto begin = steady_clock::now();
-      kdtree.build(data);
-      auto end = steady_clock::now();
-      auto time = duration_cast<microseconds>(end - begin).count();
-      cout << "Serial tree: " << time / 1e+06 << " [s]" << endl;
-    #endif
-
-      auto tmp = kdtree.head;
-      auto cnt = 0;
-      while (tmp) {
-        cout << '(' << tmp->pnt[0] << ", " << tmp->pnt[1] << ')' << endl;
-
-        if (cnt % 2)
-          tmp = tmp->left;
-        else
-          tmp = tmp->right;
-
-        ++cnt;
-      }
-      cout << cnt << endl;
-
-      delete[] pdata; */
-  
-  delete[] ptr_1;
+}
+#else
+  /* auto begin = steady_clock::now();
+  unique_ptr<node_type> tree{build(data)};
+  auto end = steady_clock::now();
+  auto time = duration_cast<microseconds>(end - begin).count();
+  cout << "Serial tree time: " << time / 1e+06 << " [s]" << endl;
+  info("print", tree); */
+#endif
 
   MPI_Finalize();
-
   return 0;
 }

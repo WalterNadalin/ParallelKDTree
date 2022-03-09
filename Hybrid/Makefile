@@ -1,11 +1,10 @@
 SRC = hybrid.cpp
 
 # The c++ compiler we are using
-CXX = mpic++
+CXX = c++
 
 # The c++ flags we use for compilation
-CXXFLAGS = -Wall -Wextra -g -std=c++14 -O3
-# -fsanitize=address  
+CXXFLAGS = -Wall -Wextra -g -std=c++14 -O3 -fsanitize=address  
 
 # eliminate default suffixes
 .SUFFIXES:
@@ -43,4 +42,4 @@ clean:
 # Headers
 format: dataset.hpp
 format: info.hpp
-format: tree.hpp
+format: node.hpp
