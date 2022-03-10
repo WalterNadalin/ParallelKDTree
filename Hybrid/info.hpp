@@ -22,7 +22,7 @@ void info() noexcept {
     cout << '\n'
          << nthreads << " threads in execution | The places are " << places
          << " with a " << names[binding] << " binding policy" << '\n'
-         << "---------------------------------------------------------\n"
+         << "-----------------------------------------------------------------------------------\n"
          << "Additional info for each thread: " << endl;
   }
 
@@ -48,7 +48,7 @@ void info() noexcept {
   }
 
 #pragma omp single
-  cout << "---------------------------------------------------------\n" << endl;
+  cout << "-----------------------------------------------------------------------------------\n" << endl;
 #else
   cout << '\n';
   cout << "Serial version: nothing to see here";
