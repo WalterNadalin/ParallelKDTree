@@ -3,7 +3,7 @@
 #include "node.hpp"
 #include <chrono>
 #include <random>
-//#include <mpi.h>
+#include <mpi.h>
 
 using std::default_random_engine;
 using std::uniform_real_distribution;
@@ -19,17 +19,15 @@ int main(int argc, char **argv) {
   int send_data = 0;
   size_t num = 15, mdn = num / 2;
 
-  /*MPI_Init(&argc, &argv);
+  MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  cout << "Processor " << rank << endl; */
   dataset<type> data{};
+  unique_ptr<node_type> tree{new node_type{}};
 
-#if defined(_OPENMP)
-//  if (rank == master) {
-    unique_ptr<node_type> tree{new node_type{}};
-
+// #if defined(_OPENMP)
+if (rank == master) {
     // Generating an uniform distribution along the 2 directions in a 'dataset'
     default_random_engine gen;
     uniform_real_distribution<type> x(-10.0, 0.0);
@@ -50,35 +48,36 @@ int main(int argc, char **argv) {
     tree->pnt[1] = data[mdn][1];
 
     dataset<type> upper = data.split(mdn);
-    cout << data;
-    cout << tree;
-    cout << endl;
-    // MPI_Send(upper.points.get(), 2 * upper.cardinality, MPI_DOUBLE, slave,
-    // send_data, MPI_COMM_WORLD);
+    MPI_Send(upper.points.get(), 2 * upper.cardinality, MPI_DOUBLE, slave,
+    send_data, MPI_COMM_WORLD);
 
     // Building a k-d tree using the 'dataset' constructed and measuring the
     // time needed to do it
-    auto begin = omp_get_wtime();
-    unique_ptr<node_type> tree{build(data)};
-    auto end = omp_get_wtime();
-    cout << "Parallel tree time: " << end - begin << " [s]" << endl;
-    info("all", tree);
-//  } else {
-    // int length = num - mdn - 1;
-    // data_ptr = new type[2 * length];
-    // MPI_Recv(data_ptr, 2 * length, MPI_DOUBLE, master, send_data, MPI_COMM_WORLD, &status);
-    // dataset<type> data(data_ptr, length);
-    // cout << data;
-    }
-}
-#else
+    // auto begin = omp_get_wtime();
+    cout << "Processor " << rank << endl;
+    tree->left_ptr.reset(build(data));
+    // auto end = omp_get_wtime();
+    // cout << "Parallel tree time: " << end - begin << " [s]" << endl;
+    // info("print", tree);
+  } else {
+     int length = num - mdn - 1;
+     MPI_Status status;
+     type *data_ptr = new type[2 * length];
+     MPI_Recv(data_ptr, 2 * length, MPI_DOUBLE, master, send_data, 
+     MPI_COMM_WORLD, &status);
+     dataset<type> data(length, data_ptr);
+     tree->right_ptr.reset(build(data));
+     cout << "Processor " << rank << endl;
+     print(tree);
+  }
+//#else
   /* auto begin = steady_clock::now();
   unique_ptr<node_type> tree{build(data)};
   auto end = steady_clock::now();
   auto time = duration_cast<microseconds>(end - begin).count();
   cout << "Serial tree time: " << time / 1e+06 << " [s]" << endl;
   info("print", tree); */
-#endif
+//#endif
 
   MPI_Finalize();
   return 0;
