@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  // Generating an uniform distribution along the 2 directions and putting the 
+  // Generating an uniform distribution along the 2 directions and putting the
   // data generated in a class 'dataset' (defined in the header 'dataset.hpp')
   // which is basically a 2 dimensional array with and enhanced interface useful
   // to deal with the recquirements of the tree construction
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < num; ++i) {
       tmp[i][0] = x(gen);
       tmp[i][1] = y(gen);
-   }
+    }
 
     data = move(tmp);
   }
@@ -79,9 +79,9 @@ int main(int argc, char **argv) {
   } else {
     MPI_Status status;
     int axis;
-    MPI_Recv(&axis, 1, MPI_UNSIGNED_SHORT, master, send_axis,
-             MPI_COMM_WORLD, &status);
-    
+    MPI_Recv(&axis, 1, MPI_UNSIGNED_SHORT, master, send_axis, MPI_COMM_WORLD,
+             &status);
+
     type *pnt_ptr = new type[2];
     MPI_Recv(pnt_ptr, 2, MPI_DOUBLE, master, send_pnt, MPI_COMM_WORLD, &status);
     tree->pnt[0] = pnt_ptr[0];
@@ -128,10 +128,10 @@ int main(int argc, char **argv) {
   uniform_real_distribution<type> y(0.0, 20.0);
   dataset<type> data(num);
 
-   for (size_t i = 0; i < num; ++i) {
-     data[i][0] = x(gen);
-     data[i][1] = y(gen);
-   }
+  for (size_t i = 0; i < num; ++i) {
+    data[i][0] = x(gen);
+    data[i][1] = y(gen);
+  }
 
   auto begin = steady_clock::now();
   unique_ptr<node_type> tree{build(data, 2)};

@@ -87,9 +87,7 @@ template <typename T> node<T> *build(dataset<T> &data, unsigned short dir) {
 }
 
 // Prints the binary tree on terminal given a node as root
-template <typename T> void print(const unique_ptr<T> &root) {
-  print(root, 0);
-}
+template <typename T> void print(const unique_ptr<T> &root) { print(root, 0); }
 
 template <typename T>
 void print(const unique_ptr<T> &root, unsigned short space) {

@@ -1,10 +1,10 @@
 #ifndef DATASET
 #define DATASET
 
-#include <omp.h>
 #include <iostream> // std::cout, std::cin, std::ostream
-#include <memory>   // std::unique_ptr
-#include <utility>  // std::swap
+#include <memory> // std::unique_ptr
+#include <omp.h>
+#include <utility> // std::swap
 
 using std::cout;
 using std::endl;

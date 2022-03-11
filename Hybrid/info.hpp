@@ -2,14 +2,14 @@
 #define INFO
 
 #include "node.hpp"
+#include <map>
 #include <omp.h>
 #include <string>
-#include <map>
 
-using std::string;
 using std::map;
+using std::string;
 
-enum class values{nd, all, info, print, time};
+enum class values { nd, all, info, print, time };
 
 template <typename T> void initialize(T &m) {
   m["all"] = values::all;
@@ -22,69 +22,69 @@ template <typename T> void initialize(T &m) {
 void info() noexcept {
 #if defined(_OPENMP)
 #pragma omp parallel proc_bind(close)
-{
-  auto nthreads = omp_get_num_threads();
+  {
+    auto nthreads = omp_get_num_threads();
 
 #pragma omp single
-  {
-    string places = getenv("OMP_PLACES");
-    string names[] = {"false", "true", "master", "close", "spread"};
-    auto binding = omp_get_proc_bind();
+    {
+      string places = getenv("OMP_PLACES");
+      string names[] = {"false", "true", "master", "close", "spread"};
+      auto binding = omp_get_proc_bind();
 
-    cout << '\n'
-         << nthreads << " threads in execution | The places are " << places
-         << " with a " << names[binding] << " binding policy" << '\n'
-         << "-----------------------------------------"
-         << "-----------------------------------------\n"
-         << "Additional info for each thread: " << endl;
-  }
+      cout << '\n'
+           << nthreads << " threads in execution | The places are " << places
+           << " with a " << names[binding] << " binding policy" << '\n'
+           << "-----------------------------------------"
+           << "-----------------------------------------\n"
+           << "Additional info for each thread: " << endl;
+    }
 
-  auto me = omp_get_thread_num(), place = omp_get_place_num();
-  auto nprocs = omp_get_place_num_procs(place);
+    auto me = omp_get_thread_num(), place = omp_get_place_num();
+    auto nprocs = omp_get_place_num_procs(place);
 
-  int proc_ids[nprocs];
-  omp_get_place_proc_ids(place, proc_ids);
+    int proc_ids[nprocs];
+    omp_get_place_proc_ids(place, proc_ids);
 
 #pragma omp barrier
 
 #pragma omp for ordered
-  for (int i = 0; i < nthreads; i++)
+    for (int i = 0; i < nthreads; i++)
 #pragma omp ordered
-  {
-    cout << "Thread number " << me << " in place number " << place
-         << " | Processors here: ";
+    {
+      cout << "Thread number " << me << " in place number " << place
+           << " | Processors here: ";
 
-    for (int p = 0; p < nprocs; p++)
-      cout << proc_ids[p] << ' ';
+      for (int p = 0; p < nprocs; p++)
+        cout << proc_ids[p] << ' ';
 
-    cout << endl;
-  }
+      cout << endl;
+    }
 
 #pragma omp single
-  cout << "-----------------------------------------"
-       << "-----------------------------------------" << endl;
-}
+    cout << "-----------------------------------------"
+         << "-----------------------------------------" << endl;
+  }
 #else
   cout << '\n';
-  cout << "Serial version: nothing to see here";
+  cout << "Serial version: only one thread spawned by one process is running";
   cout << endl;
 #endif
 }
 
 #if defined(_OPENMP)
 template <typename T, typename R> void time(T c, R cc) {
-        cout << "\nConstruction time: " << c
-             << " | Communication and construction time: " << cc << endl;
+  cout << "\nConstruction time: " << c
+       << " | Communication and construction time: " << cc << endl;
 }
 #else
 template <typename T> void time(T c) {
-        cout << "\nConstruction time: " << c << endl;
+  cout << "\nConstruction time: " << c << endl;
 }
 #endif
 
 // Prints required information evaluating the commands passed throught the
 // command line
-#if defined(_OPENMP) 
+#if defined(_OPENMP)
 template <typename T, typename R, typename S>
 void info(string x, const T &tree, R c, S cc) noexcept {
 #else
@@ -92,34 +92,33 @@ template <typename T, typename R>
 void info(string x, const T &tree, R c) noexcept {
 #endif
   map<string, values> mapped_strings;
-  initialize(mapped_strings);  
-  
-  switch(mapped_strings[x])
-  {
-    case values::all:
-      info();
+  initialize(mapped_strings);
+
+  switch (mapped_strings[x]) {
+  case values::all:
+    info();
 #if defined(_OPENMP)
-      time(c, cc);
+    time(c, cc);
 #else
-      time(c);
+    time(c);
 #endif
-      break;
-    case values::info:
-      info();
-      break;
-    case values::print:
-      print(tree); 
-      break;
-    case values::time:
+    break;
+  case values::info:
+    info();
+    break;
+  case values::print:
+    print(tree);
+    break;
+  case values::time:
 #if defined(_OPENMP)
-      time(c, cc);
+    time(c, cc);
 #else
-      time(c);
+    time(c);
 #endif
-      break;
-    default: 
-      cout << "\nUnknown command passed" << endl;
-      break;
+    break;
+  default:
+    cout << "\nUnknown command passed" << endl;
+    break;
   }
 
 #if defined(_OPENMP)
