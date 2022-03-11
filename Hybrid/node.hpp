@@ -3,14 +3,10 @@
 
 #include "dataset.hpp"
 #include <array>
-#include <bits/stdc++.h>
-#include <iostream>
 
 #define COUNT 20
+
 using std::array;
-using std::cout;
-using std::endl;
-using std::ostream;
 
 template <typename T> struct node {
   unsigned short axis;
@@ -22,7 +18,7 @@ template <typename T> struct node {
 #endif
 
   // Constructor and destructor: again, since all members implement the RAII we
-  // don't have to take care of allocating or deallocating the memory
+  // don't have to take care of allocating or deallocating the memory by hand
   node() = default;
   ~node() = default;
 
@@ -44,39 +40,32 @@ template <typename T> struct node {
     }
 
     mdn = first + size / 2 - (size < 3);
+
     pnt[0] = data[mdn][0];
     pnt[1] = data[mdn][1];
-    // Points on the hyperplane 'axis = point' (?)
 
 #if defined(_OPENMP)
 #pragma omp task shared(data) firstprivate(size, axis, first, mdn)
+#endif
     if (size > 2) {
       auto tmp = new node{};
       auto tmp_ptr = tmp->build(data, first, mdn - (mdn > 0), axis);
       left_ptr.reset(tmp_ptr);
     }
+
+#if defined(_OPENMP)
 #pragma omp task shared(data) firstprivate(axis, last, mdn)
+#endif
     {
       auto tmp = new node{};
       auto tmp_ptr = tmp->build(data, mdn + (mdn < last), last, axis);
       right_ptr.reset(tmp_ptr);
     }
-#else
-    auto tmp = new node{};
-    auto tmp_ptr = tmp->build(data, mdn + (mdn < last), last, axis);
-    right_ptr.reset(tmp_ptr);
-
-    if (size > 2) {
-      tmp = new node{};
-      tmp_ptr = tmp->build(data, first, mdn - (mdn > 0), axis);
-      left_ptr.reset(tmp_ptr);
-    }
-#endif
 
     return this;
   }
 
-  // Operator '<<' overloading: in this way the syntax 'cout << node->left_ptr;'
+  // Operator '<<' overloading: in this way the syntax 'cout << node->left_ptr'
   // is supported
   friend ostream &operator<<(ostream &os, const unique_ptr<node> &x) {
     os << x->axis << ' ' << x->pnt[0] << ' ' << x->pnt[1];
@@ -84,22 +73,21 @@ template <typename T> struct node {
   }
 };
 
-// Builds the binary tree
-template <typename T> node<T> *build(dataset<T> &data) {
+// Builds the binary tree and returns its root as a pointer to a node
+template <typename T> node<T> *build(dataset<T> &data, unsigned short dir) {
   auto tmp = new node<T>{};
 
 #if defined(_OPENMP)
 #pragma omp parallel shared(data) proc_bind(close)
 #pragma omp single
 #endif
-  tmp = tmp->build(data, 0, data.cardinality - 1, 2);
+  tmp = tmp->build(data, 0, data.cardinality - 1, dir);
 
   return tmp;
 }
 
-// Prints binary tree
+// Prints the binary tree on terminal given a node as root
 template <typename T> void print(const unique_ptr<T> &root) {
-  // Pass initial space count as 0
   print(root, 0);
 }
 
@@ -108,13 +96,10 @@ void print(const unique_ptr<T> &root, unsigned short space) {
   if (root == nullptr)
     return;
 
-  // Increase distance between levels
   space += COUNT;
-
   print(root->right_ptr, space);
-
-  // Print current node after space
   cout << endl;
+
   for (unsigned short i = COUNT; i < space; i++)
     cout << ' ';
 

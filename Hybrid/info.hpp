@@ -2,15 +2,27 @@
 #define INFO
 
 #include "node.hpp"
-#include <cstring>
 #include <omp.h>
 #include <string>
+#include <map>
 
 using std::string;
+using std::map;
+
+enum class values{nd, all, info, print, time};
+
+template <typename T> void initialize(T &m) {
+  m["all"] = values::all;
+  m["print"] = values::print;
+  m["info"] = values::info;
+  m["time"] = values::time;
+}
 
 // Prints some information about the threads running
 void info() noexcept {
 #if defined(_OPENMP)
+#pragma omp parallel proc_bind(close)
+{
   auto nthreads = omp_get_num_threads();
 
 #pragma omp single
@@ -22,8 +34,8 @@ void info() noexcept {
     cout << '\n'
          << nthreads << " threads in execution | The places are " << places
          << " with a " << names[binding] << " binding policy" << '\n'
-         << "------------------------------------------------------------------"
-            "-----------------\n"
+         << "-----------------------------------------"
+         << "-----------------------------------------\n"
          << "Additional info for each thread: " << endl;
   }
 
@@ -49,36 +61,71 @@ void info() noexcept {
   }
 
 #pragma omp single
-  cout << "--------------------------------------------------------------------"
-          "---------------\n"
-       << endl;
+  cout << "-----------------------------------------"
+       << "-----------------------------------------" << endl;
+}
 #else
   cout << '\n';
   cout << "Serial version: nothing to see here";
-  cout << '\n' << endl;
+  cout << endl;
 #endif
 }
 
+#if defined(_OPENMP)
+template <typename T, typename R> void time(T c, R cc) {
+        cout << "\nConstruction time: " << c
+             << " | Communication and construction time: " << cc << endl;
+}
+#else
+template <typename T> void time(T c) {
+        cout << "\nConstruction time: " << c << endl;
+}
+#endif
+
 // Prints required information evaluating the commands passed throught the
 // command line
-template <typename T> void info(const char *x, const T &tree) noexcept {
-#if defined(_OPENMP)
-  if (!strcmp(x, "all")) {
-#pragma omp parallel proc_bind(close)
-    info();
-    print(tree);
-  } else if (!strcmp(x, "info"))
-#pragma omp parallel proc_bind(close)
-    info();
-  else if (!strcmp(x, "print"))
-    print(tree);
-  else
-    cout << "\nUnknown command passed\n" << endl;
+#if defined(_OPENMP) 
+template <typename T, typename R, typename S>
+void info(string x, const T &tree, R c, S cc) noexcept {
 #else
-  if (!strcmp(x, "print"))
-    print(tree);
-  else
-    cout << "\nUnknown command passed\n" << endl;
+template <typename T, typename R>
+void info(string x, const T &tree, R c) noexcept {
+#endif
+  map<string, values> mapped_strings;
+  initialize(mapped_strings);  
+  
+  switch(mapped_strings[x])
+  {
+    case values::all:
+      info();
+#if defined(_OPENMP)
+      time(c, cc);
+#else
+      time(c);
+#endif
+      break;
+    case values::info:
+      info();
+      break;
+    case values::print:
+      print(tree); 
+      break;
+    case values::time:
+#if defined(_OPENMP)
+      time(c, cc);
+#else
+      time(c);
+#endif
+      break;
+    default: 
+      cout << "\nUnknown command passed" << endl;
+      break;
+  }
+
+#if defined(_OPENMP)
+  cout << "_________________________________________"
+       << "_________________________________________" << endl;
 #endif
 }
+
 #endif

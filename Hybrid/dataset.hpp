@@ -1,12 +1,11 @@
 #ifndef DATASET
 #define DATASET
 
-#include <iostream>
-#include <memory>  // std::unique_ptr
-#include <utility> // std::swap
+#include <omp.h>
+#include <iostream> // std::cout, std::cin, std::ostream
+#include <memory>   // std::unique_ptr
+#include <utility>  // std::swap
 
-#define COUNT 20
-using std::array;
 using std::cout;
 using std::endl;
 using std::ostream;
@@ -141,6 +140,8 @@ template <typename T> struct dataset {
     return b;
   }
 
+  // Operator '<<' overloading: in this way the syntax 'cout << dataset'
+  // is supported
   friend ostream &operator<<(ostream &os, const dataset<T> &x) {
     for (size_t i = 0; i < x.cardinality; ++i)
       os << x[i][0] << ' ' << x[i][1] << endl;
