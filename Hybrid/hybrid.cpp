@@ -1,17 +1,13 @@
-#include "dataset.hpp"
+#include "communication.hpp"
 #include "info.hpp"
-#include "node.hpp"
 #include <chrono>
-#include <mpi.h>
 #include <random>
 #include <thread>
 
 using std::default_random_engine;
-using std::move;
 using std::uniform_real_distribution;
 using std::chrono::duration_cast;
 using std::chrono::microseconds;
-using std::chrono::seconds;
 using std::chrono::steady_clock;
 using std::this_thread::sleep_for;
 
@@ -22,9 +18,8 @@ int main(int argc, char **argv) {
 
 #if defined(_OPENMP)
   double end, begin;
-  int rank, size, master = 0, slave = 1;
-  int send_data = 0, send_pnt = 1, send_axis = 3;
-  size_t mdn = num / 2;
+  int size, rank, master = 0;
+  unsigned short axis;
   dataset<type> data{};
   unique_ptr<node_type> tree{new node_type{}};
 
@@ -55,50 +50,26 @@ int main(int argc, char **argv) {
     data = move(tmp);
   }
 
-  // Building the tree
-  auto start = MPI_Wtime();
-  if (rank == master) {
-    // Getting the first node and splitting the data, kepping one half for
-    // the master and sending the other half to the slave
-    auto axis = data.most_spreaded(0, num - 1);
-    MPI_Send(&axis, 1, MPI_UNSIGNED_SHORT, slave, send_axis, MPI_COMM_WORLD);
-    data.sort(axis, 0, num - 1);
-    tree->pnt[0] = data[mdn][0];
-    tree->pnt[1] = data[mdn][1];
-    MPI_Send(data[mdn], 2, MPI_DOUBLE, slave, send_pnt, MPI_COMM_WORLD);
-    dataset<type> upper = data.split(mdn);
-    MPI_Send(upper.points.get(), 2 * upper.cardinality, MPI_DOUBLE, slave,
-             send_data, MPI_COMM_WORLD);
+   // Building the tree: each node will have a different branch of the tree
+   auto start = MPI_Wtime();
+   if(size / 2  > 0) {
+    auto tmp = distribute(master, size / 2, size / 2, axis, tree, data); 
 
-    // Building a k-d tree using the 'dataset' constructed and measuring the
-    // time needed to do it
-    cout << data.cardinality << endl;
-    begin = omp_get_wtime();
-    tree->right_ptr.reset(build(data, axis));
-    end = omp_get_wtime();
+    if(rank % 2 == 0) { 
+      begin = MPI_Wtime();
+      tmp->left_ptr.reset(build(data, axis));
+      end = MPI_Wtime();
+    } else {
+      begin = MPI_Wtime();
+      tmp->right_ptr.reset(build(data, axis)); 
+      end = MPI_Wtime();
+    }
   } else {
-    MPI_Status status;
-    int axis;
-    MPI_Recv(&axis, 1, MPI_UNSIGNED_SHORT, master, send_axis, MPI_COMM_WORLD,
-             &status);
-
-    type *pnt_ptr = new type[2];
-    MPI_Recv(pnt_ptr, 2, MPI_DOUBLE, master, send_pnt, MPI_COMM_WORLD, &status);
-    tree->pnt[0] = pnt_ptr[0];
-    tree->pnt[1] = pnt_ptr[1];
-    delete[] pnt_ptr;
-
-    int length = num - mdn - 1;
-    type *data_ptr = new type[2 * length];
-    MPI_Recv(data_ptr, 2 * length, MPI_DOUBLE, master, send_data,
-             MPI_COMM_WORLD, &status);
-    dataset<type> data(length, data_ptr);
-
-    cout << data.cardinality << endl;
     begin = MPI_Wtime();
-    tree->left_ptr.reset(build(data, axis));
+    tree.reset(build(data, axis));
     end = MPI_Wtime();
   }
+
   auto finish = MPI_Wtime();
 
   // Printing some info if the user requires it
@@ -115,17 +86,18 @@ int main(int argc, char **argv) {
         info(command, tree, end - begin, finish - start);
       }
 
-      sleep_for(seconds(1));
+      sleep_for(microseconds(500000));
     }
-
-    cout << endl;
+     
+    if(rank == master)
+      cout << endl;
   }
 
   MPI_Finalize();
 #else
   default_random_engine gen;
   uniform_real_distribution<type> x(-10.0, 0.0);
-  uniform_real_distribution<type> y(0.0, 20.0);
+  uniform_real_distribution<type> y(0.0, 40.0);
   dataset<type> data(num);
 
   for (size_t i = 0; i < num; ++i) {
@@ -137,7 +109,6 @@ int main(int argc, char **argv) {
   unique_ptr<node_type> tree{build(data, 2)};
   auto end = steady_clock::now();
   auto time = duration_cast<microseconds>(end - begin).count() / 1e+06;
-  // cout << "Serial tree time: " << time / 1e+06 << " [s]" << endl;
 
   if (argc > 2) {
     string command{argv[2]};

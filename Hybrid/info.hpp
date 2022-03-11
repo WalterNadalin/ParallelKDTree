@@ -3,8 +3,13 @@
 
 #include "node.hpp"
 #include <map>
-#include <omp.h>
 #include <string>
+
+#if defined(_OPENMP)
+#define TIME time(c, cc)
+#else
+#define TIME time(c)
+#endif
 
 using std::map;
 using std::string;
@@ -34,8 +39,8 @@ void info() noexcept {
       cout << '\n'
            << nthreads << " threads in execution | The places are " << places
            << " with a " << names[binding] << " binding policy" << '\n'
-           << "-----------------------------------------"
-           << "-----------------------------------------\n"
+           << "----------------------------------------"
+           << "----------------------------------------\n"
            << "Additional info for each thread: " << endl;
     }
 
@@ -61,8 +66,8 @@ void info() noexcept {
     }
 
 #pragma omp single
-    cout << "-----------------------------------------"
-         << "-----------------------------------------" << endl;
+    cout << "----------------------------------------"
+         << "----------------------------------------" << endl;
   }
 #else
   cout << '\n';
@@ -97,11 +102,7 @@ void info(string x, const T &tree, R c) noexcept {
   switch (mapped_strings[x]) {
   case values::all:
     info();
-#if defined(_OPENMP)
-    time(c, cc);
-#else
-    time(c);
-#endif
+    TIME;
     break;
   case values::info:
     info();
@@ -110,11 +111,7 @@ void info(string x, const T &tree, R c) noexcept {
     print(tree);
     break;
   case values::time:
-#if defined(_OPENMP)
-    time(c, cc);
-#else
-    time(c);
-#endif
+    TIME;
     break;
   default:
     cout << "\nUnknown command passed" << endl;
@@ -122,8 +119,8 @@ void info(string x, const T &tree, R c) noexcept {
   }
 
 #if defined(_OPENMP)
-  cout << "_________________________________________"
-       << "_________________________________________" << endl;
+  cout << "________________________________________"
+       << "________________________________________" << endl;
 #endif
 }
 
