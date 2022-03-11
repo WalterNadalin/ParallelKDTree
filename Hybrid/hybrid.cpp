@@ -50,18 +50,18 @@ int main(int argc, char **argv) {
     data = move(tmp);
   }
 
-   // Building the tree: each node will have a different branch of the tree
-   auto start = MPI_Wtime();
-   if(size / 2  > 0) {
-    auto tmp = distribute(master, size / 2, size / 2, axis, tree, data); 
+  // Building the tree: each node will have a different branch of the tree
+  auto start = MPI_Wtime();
+  if (size / 2 > 0) {
+    auto tmp = distribute(master, size / 2, size / 2, axis, tree, data);
 
-    if(rank % 2 == 0) { 
+    if (rank % 2 == 0) {
       begin = MPI_Wtime();
       tmp->left_ptr.reset(build(data, axis));
       end = MPI_Wtime();
     } else {
       begin = MPI_Wtime();
-      tmp->right_ptr.reset(build(data, axis)); 
+      tmp->right_ptr.reset(build(data, axis));
       end = MPI_Wtime();
     }
   } else {
@@ -88,8 +88,8 @@ int main(int argc, char **argv) {
 
       sleep_for(microseconds(500000));
     }
-     
-    if(rank == master)
+
+    if (rank == master)
       cout << endl;
   }
 

@@ -2,7 +2,7 @@
 #define DATASET
 
 #include <iostream> // std::cout, std::cin, std::ostream
-#include <memory> // std::unique_ptr
+#include <memory>   // std::unique_ptr
 #include <omp.h>
 #include <utility> // std::swap
 

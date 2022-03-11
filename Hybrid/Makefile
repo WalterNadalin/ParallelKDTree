@@ -44,3 +44,4 @@ clean:
 format: dataset.hpp
 format: info.hpp
 format: node.hpp
+format: communication.hpp
