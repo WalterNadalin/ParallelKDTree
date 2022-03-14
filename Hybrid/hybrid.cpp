@@ -71,28 +71,28 @@ int main(int argc, char **argv) {
   }
 
   auto finish = MPI_Wtime();
- 
-  // Going through the tree scattered among difference processes
-  if(rank == master)
-    cout << tree << endl;
-    
-  auto tmp_ptr = tree.get();
-  auto tmp_prc = right(tmp_ptr, master); 
 
-  if(rank == tmp_prc)
+  // Going through the tree scattered among difference processes
+  if (rank == master)
+    cout << tree << endl;
+
+  auto tmp_ptr = tree.get();
+  auto tmp_prc = right(tmp_ptr, master);
+
+  if (rank == tmp_prc)
     cout << tmp_ptr->pnt[0] << ' ' << tmp_ptr->pnt[1] << endl;
-  
-  tmp_prc = right(tmp_ptr, tmp_prc); 
-  if(rank == tmp_prc)
+
+  tmp_prc = right(tmp_ptr, tmp_prc);
+  if (rank == tmp_prc)
     cout << tmp_ptr->pnt[0] << ' ' << tmp_ptr->pnt[1] << endl;
 
   // YOU MUST PUT 'master' HERE
-    //cout << ptr << endl;
-    //ptr = right(ptr, ptr->prc); // Then you can use 'ptr->prc' with no
-                                // problema
-    /*ptr = right(ptr);
-    cout << ptr << endl;*/
-   
+  // cout << ptr << endl;
+  // ptr = right(ptr, ptr->prc); // Then you can use 'ptr->prc' with no
+  // problema
+  /*ptr = right(ptr);
+  cout << ptr << endl;*/
+
   // Printing some info if the user requires it
   if (argc > 2) {
     MPI_Barrier(MPI_COMM_WORLD);

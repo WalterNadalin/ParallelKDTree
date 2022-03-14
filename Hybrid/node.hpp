@@ -114,22 +114,21 @@ void print(const unique_ptr<T> &root, unsigned short space) {
   print(root->left_ptr, space);
 }
 
-
 #if defined(_OPENMP)
 // High level interface to travel the tree even if it is distributed among
 // different processes that do not share the same memory
-template<typename T> int left(T *&head, int master) {
+template <typename T> int left(T *&head, int master) {
   int recv_rank, rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  if(rank == master) 
-     recv_rank = head->left_prc;
+  if (rank == master)
+    recv_rank = head->left_prc;
 
-  MPI_Bcast(&recv_rank, 1, MPI_INT, master, MPI_COMM_WORLD); 
- 
-  if(rank == master && rank == recv_rank) {
+  MPI_Bcast(&recv_rank, 1, MPI_INT, master, MPI_COMM_WORLD);
+
+  if (rank == master && rank == recv_rank) {
     head = head->left_ptr.get();
-  } else if(rank == recv_rank) {
+  } else if (rank == recv_rank) {
     auto shared_node = find_node(head, master, rank);
     head = shared_node->left_ptr.get();
   }
@@ -137,15 +136,15 @@ template<typename T> int left(T *&head, int master) {
   return recv_rank;
 }
 
-template<typename T> int right(T *&head, int master) {
+template <typename T> int right(T *&head, int master) {
   int recv_rank = (head != nullptr) ? head->right_prc : -1, rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Bcast(&recv_rank, 1, MPI_INT, master, MPI_COMM_WORLD);
- 
-  if(rank == master && rank == recv_rank) {
+
+  if (rank == master && rank == recv_rank) {
     head = head->right_ptr.get();
     return recv_rank;
-  } else if(rank == recv_rank) {
+  } else if (rank == recv_rank) {
     auto shared_node = find_node(head, master, rank);
     head = shared_node->right_ptr.get();
     return recv_rank;
@@ -155,18 +154,18 @@ template<typename T> int right(T *&head, int master) {
 }
 
 template <typename T> T find_node(T head, int master, int slave) {
-  if(head->left_prc == master && head->right_prc == slave)
+  if (head->left_prc == master && head->right_prc == slave)
     return head;
 
-  if(head->right_prc == master && head->left_prc==slave)
+  if (head->right_prc == master && head->left_prc == slave)
     return head;
 
   T common_node = nullptr;
 
-  if(head->left_ptr != nullptr) 
-    common_node = find_node(head->left_ptr.get(), master, slave); 
+  if (head->left_ptr != nullptr)
+    common_node = find_node(head->left_ptr.get(), master, slave);
 
-  if(head->right_ptr != nullptr) 
+  if (head->right_ptr != nullptr)
     common_node = find_node(head->right_ptr.get(), master, slave);
 
   return common_node;
