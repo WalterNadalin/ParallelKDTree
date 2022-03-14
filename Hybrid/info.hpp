@@ -2,7 +2,7 @@
 #define INFO
 
 #include "node.hpp"
-#include <map>
+#include <map> # std::map:
 #include <string>
 
 #if defined(_OPENMP)
