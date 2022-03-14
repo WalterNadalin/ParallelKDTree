@@ -3,6 +3,7 @@
 
 #include "dataset.hpp"
 #include <array>
+#include <mpi.h>
 
 #define COUNT 20
 
@@ -14,7 +15,8 @@ template <typename T> struct node {
   unique_ptr<node> left_ptr;
   unique_ptr<node> right_ptr;
 #if defined(_OPENMP)
-  unsigned short prc;
+  int left_prc{-1};
+  int right_prc{-1};
 #endif
 
   // Constructor and destructor: again, since all members implement the RAII we
@@ -48,6 +50,9 @@ template <typename T> struct node {
 #pragma omp task shared(data) firstprivate(size, axis, first, mdn)
 #endif
     if (size > 2) {
+#if defined(_OPENMP)
+      MPI_Comm_rank(MPI_COMM_WORLD, &left_prc);
+#endif
       auto tmp = new node{};
       auto tmp_ptr = tmp->build(data, first, mdn - (mdn > 0), axis);
       left_ptr.reset(tmp_ptr);
@@ -57,6 +62,9 @@ template <typename T> struct node {
 #pragma omp task shared(data) firstprivate(axis, last, mdn)
 #endif
     {
+#if defined(_OPENMP)
+      MPI_Comm_rank(MPI_COMM_WORLD, &right_prc);
+#endif
       auto tmp = new node{};
       auto tmp_ptr = tmp->build(data, mdn + (mdn < last), last, axis);
       right_ptr.reset(tmp_ptr);
@@ -106,4 +114,62 @@ void print(const unique_ptr<T> &root, unsigned short space) {
   print(root->left_ptr, space);
 }
 
+
+#if defined(_OPENMP)
+// High level interface to travel the tree even if it is distributed among
+// different processes that do not share the same memory
+template<typename T> int left(T *&head, int master) {
+  int recv_rank, rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  if(rank == master) 
+     recv_rank = head->left_prc;
+
+  MPI_Bcast(&recv_rank, 1, MPI_INT, master, MPI_COMM_WORLD); 
+ 
+  if(rank == master && rank == recv_rank) {
+    head = head->left_ptr.get();
+  } else if(rank == recv_rank) {
+    auto shared_node = find_node(head, master, rank);
+    head = shared_node->left_ptr.get();
+  }
+
+  return recv_rank;
+}
+
+template<typename T> int right(T *&head, int master) {
+  int recv_rank = (head != nullptr) ? head->right_prc : -1, rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Bcast(&recv_rank, 1, MPI_INT, master, MPI_COMM_WORLD);
+ 
+  if(rank == master && rank == recv_rank) {
+    head = head->right_ptr.get();
+    return recv_rank;
+  } else if(rank == recv_rank) {
+    auto shared_node = find_node(head, master, rank);
+    head = shared_node->right_ptr.get();
+    return recv_rank;
+  }
+
+  return recv_rank;
+}
+
+template <typename T> T find_node(T head, int master, int slave) {
+  if(head->left_prc == master && head->right_prc == slave)
+    return head;
+
+  if(head->right_prc == master && head->left_prc==slave)
+    return head;
+
+  T common_node = nullptr;
+
+  if(head->left_ptr != nullptr) 
+    common_node = find_node(head->left_ptr.get(), master, slave); 
+
+  if(head->right_ptr != nullptr) 
+    common_node = find_node(head->right_ptr.get(), master, slave);
+
+  return common_node;
+}
+#endif
 #endif

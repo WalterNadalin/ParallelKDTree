@@ -1,6 +1,5 @@
 #include "node.hpp"
 #include <cmath>
-#include <mpi.h>
 
 #define TAG_PNT 0
 #define TAG_DAT 1
@@ -42,9 +41,10 @@ N *distribute(int master, int slave, int size, unsigned short &axis,
 
     // Recursion going to the left branch
     N *head = tree.get();
-
+    head->left_prc = rank;
+    head->right_prc = rank + size ;
     if (size / 2 > 0) {
-      tree->left_ptr.reset(new N{});
+      tree->left_ptr.reset(new N{}); 
       head = distribute(rank, rank + size / 2, size / 2, axis, tree->left_ptr,
                         data);
     }
@@ -79,6 +79,8 @@ N *distribute(int master, int slave, int size, unsigned short &axis,
 
     // Recursion going to the right branch
     N *head = tree.get();
+    head->left_prc = status.MPI_SOURCE;
+    head->right_prc = rank;
     if (size / 2 > 0) {
       tree->right_ptr.reset(new N{});
       head = distribute(rank, rank + size / 2, size / 2, axis, tree->right_ptr,
