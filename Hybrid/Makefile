@@ -1,47 +1,35 @@
-SRC = hybrid.cpp
+# The executable
+EXE = tree.x
 
-# The c++ compiler we are using
+# The compiler
 CXX = mpic++
 
-# The c++ flags we use for compilation
-CXXFLAGS = -Wall -Wextra -g -std=c++14 -O3 
-# -fsanitize=address  
+# Flags for the compiler
+CXXFLAGS = -std=c++14 -I include
+FLAG =
 
-# eliminate default suffixes
-.SUFFIXES:
-SUFFIXES =
+# Conditional flag
+ifdef parallel
+	FLAG += -fopenmp
+endif
 
-# Just consider our own suffixes
-.SUFFIXES: .cpp .x
+# Targets
+all: $(EXE)
 
-# Serial compilation
-serial: $(SRC)
-	@echo "Making serial version"
-	$(CXX) $^ -o $@.x $(CXXFLAGS) 
-	
-.PHONY: serial
+# Rules to make the object file
+%.o: %.cpp
+	$(CXX) -c $< -o $@ $(CXXFLAGS)$(FLAG)
 
-# Parallel compilation
-parallel: $(SRC) 
-	@echo "Making parallel version"
-	$(CXX) $^ -o $@.x -fopenmp $(CXXFLAGS)
-	
-.PHONY: parallel
+# Rules to make the executable
+$(EXE): tree.o src/info.o
+	$(CXX) $^ -o $(EXE)$(FLAG)
+	@rm tree.o
 
-# Formatting
-format: $(SRC)
-	@clang-format -i $^ -verbose || echo "Please install clang-format to run this command"
+# Dependencies
+tree.o: src/info.o
+src/info.o: include/info.hpp
 
-.PHONY: format
-
-# Cleaning
 clean:
-	rm -f $(EXE) *~
+	rm src/*.o $(EXE)
 
-.PHONY: clean
-
-# Headers
-format: dataset.hpp
-format: info.hpp
-format: node.hpp
-format: communication.hpp
+.PHONY: clean all format
