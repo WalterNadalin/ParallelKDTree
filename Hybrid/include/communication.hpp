@@ -20,13 +20,15 @@ N *distribute(int master, int slave, int size, unsigned short &axis,
 
   if (rank == master) {
     size_t crd = data.cardinality, mdn = crd / 2, length = crd - mdn - 1;
-    auto dir = data.most_spreaded(0, crd - 1);
+     auto dir = data.most_spreaded(0, crd - 1);
 
+    //auto begin = MPI_Wtime(); 
     if (axis != dir) {
       axis = dir;
       data.sort(axis, 0, crd - 1);
     }
-    
+    //auto finish = MPI_Wtime();
+    //cout << finish - begin << endl; 
     tree->pnt[0] = data[mdn][0];
     tree->pnt[1] = data[mdn][1];
     tree->axis = axis;
@@ -34,18 +36,18 @@ N *distribute(int master, int slave, int size, unsigned short &axis,
     MPI_Send(&size, 1, MPI_INT, slave, TAG_SIZ, MPI_COMM_WORLD);
     MPI_Send(&length, 1, MPI_UNSIGNED_LONG, slave, TAG_LEN, MPI_COMM_WORLD);
     MPI_Send(&axis, 1, MPI_UNSIGNED_SHORT, slave, TAG_DIR, MPI_COMM_WORLD);
-    MPI_Send(data[mdn], 2, MPI_DOUBLE, slave, TAG_PNT, MPI_COMM_WORLD);
+    MPI_Send(data[mdn], 2, MPI_FLOAT, slave, TAG_PNT, MPI_COMM_WORLD);
 
     // Splitting the data in half: the master keeps the lower half for
     // itself and send the other half to the slave
     dataset<T> upper = data.split(mdn);
-    MPI_Send(upper.points.get(), 2 * upper.cardinality, MPI_DOUBLE, slave,
+    MPI_Send(upper.points.get(), 2 * upper.cardinality, MPI_FLOAT, slave,
              TAG_DAT, MPI_COMM_WORLD);
 
     // Recursion going to the left branch
     N *head = tree.get();
-    head->left_prc = rank;
-    head->right_prc = rank + size;
+   // head->left_prc = rank;
+   // head->right_prc = rank + size;
     if (size / 2 > 0) {
       tree->left_ptr.reset(new N{});
       head = distribute(rank, rank + size / 2, size / 2, axis, tree->left_ptr,
@@ -65,7 +67,7 @@ N *distribute(int master, int slave, int size, unsigned short &axis,
              MPI_COMM_WORLD, &status);
     MPI_Recv(&axis, 1, MPI_UNSIGNED_SHORT, MPI_ANY_SOURCE, TAG_DIR,
              MPI_COMM_WORLD, &status);
-    MPI_Recv(pnt_ptr, 2, MPI_DOUBLE, MPI_ANY_SOURCE, TAG_PNT, MPI_COMM_WORLD,
+    MPI_Recv(pnt_ptr, 2, MPI_FLOAT, MPI_ANY_SOURCE, TAG_PNT, MPI_COMM_WORLD,
              &status);
 
     // Exploiting the information receive
@@ -76,15 +78,15 @@ N *distribute(int master, int slave, int size, unsigned short &axis,
     T *data_ptr = new T[2 * length];
 
     // Receiving the lower part of the dataset
-    MPI_Recv(data_ptr, 2 * length, MPI_DOUBLE, MPI_ANY_SOURCE, TAG_DAT,
+    MPI_Recv(data_ptr, 2 * length, MPI_FLOAT, MPI_ANY_SOURCE, TAG_DAT,
              MPI_COMM_WORLD, &status);
     dataset<T> tmp(length, data_ptr);
     data = move(tmp);
 
     // Recursion going to the right branch
     N *head = tree.get();
-    head->left_prc = status.MPI_SOURCE;
-    head->right_prc = rank;
+  //  head->left_prc = status.MPI_SOURCE;
+  //  head->right_prc = rank;
     if (size / 2 > 0) {
       tree->right_ptr.reset(new N{});
       head = distribute(rank, rank + size / 2, size / 2, axis, tree->right_ptr,

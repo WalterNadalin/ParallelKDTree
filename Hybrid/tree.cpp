@@ -12,21 +12,21 @@ using std::chrono::steady_clock;
 using std::this_thread::sleep_for;
 
 int main(int argc, char **argv) {
-  using type = double;
+  using type = float;
   using node_type = node<type>;
   size_t num = (argc > 1) ? atoi(argv[1]) : 15;
 
 #if defined(_OPENMP)
   double end, begin, start, finish;
-  int size, rank, master = 0;
+  int thr, size, rank, master = 0;
   unsigned short axis = 2;
   dataset<type> data{};
   unique_ptr<node_type> tree{new node_type{}};
 
-  /* if (argc > 3) {
+  if (argc > 3) {
     auto nthreads = atoi(argv[3]);
     omp_set_num_threads(nthreads);
-  } */
+  }
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -36,21 +36,10 @@ int main(int argc, char **argv) {
   // data generated in a class 'dataset' (defined in the header 'dataset.hpp')
   // which is basically a 2 dimensional array with and enhanced interface useful
   // to deal with the recquirements of the tree construction
-  size_t max = 1 << atoi(argv[1]);
-  size_t max_threads = atoi(argv[3]);
- 
-  if(size < 2)
-  cout << "Processors" << '\t' << "Process" << '\t' << "Node" << "\t\t" << "Points" << '\t' << "Threads"
-       << '\t'  << "Construction" << '\t' << "Distribution" << endl;
-
-  for(int j = 1; j < max_threads + 1; j = j * 2) {
-    omp_set_num_threads(j);
-  for(size_t i = 8; i < max; i = i * 8) {
-  num = i - 1;
   if (rank == master) {
     default_random_engine gen;
-    uniform_real_distribution<type> x(0.0, 100.0);
-    uniform_real_distribution<type> y(0.0, 100.0);
+    uniform_real_distribution<type> x(0.0, 1024.0);
+    uniform_real_distribution<type> y(0.0, 1024.0);
     dataset<type> tmp(num);
 
     for (size_t i = 0; i < num; ++i) {
@@ -113,20 +102,17 @@ int main(int argc, char **argv) {
         char name[MPI_MAX_PROCESSOR_NAME];
         int len;
         MPI_Get_processor_name(name, &len);
-        cout << size << "\t\t" << rank << '\t' << name << '\t' << num << '\t' << j
-             << '\t'  << end - begin << '\t' << finish - start;
-        // cout << "\nProcess " << rank << " running on node " << name << endl;
+        cout << "\nProcessor " << rank << " running on node " << name << endl;
         info(command, tree, end - begin, finish - start);
       }
 
       sleep_for(microseconds(100000));
     }
 
-   
-    cout << endl;
+    if(rank == master)
+      cout << endl;
   }
-  }
-  }
+
   MPI_Finalize();
 #else
   size_t max = 1 << atoi(argv[1]);

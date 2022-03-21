@@ -14,10 +14,10 @@ template <typename T> struct node {
   array<T, 2> pnt;
   unique_ptr<node> left_ptr;
   unique_ptr<node> right_ptr;
-#if defined(_OPENMP)
+/* #if defined(_OPENMP)
   int left_prc{-1};
   int right_prc{-1};
-#endif
+#endif*/
 
   // Constructor and destructor: again, since all members implement the RAII we
   // don't have to take care of allocating or deallocating the memory by hand
@@ -35,9 +35,13 @@ template <typename T> struct node {
       return;
     }
 
-    axis = data.most_spreaded(first, last);
+   /* if(axis)
+      axis = 0;
+    else
+      axis = 1; */
 
-    if (axis != dir) { // Big optimization
+   axis = data.most_spreaded(first, last);
+   if (axis != dir) { // Big optimization
       data.sort(axis, first, last);
     }
 
@@ -50,9 +54,9 @@ template <typename T> struct node {
 #pragma omp task shared(data) firstprivate(size, axis, first, mdn)// final(size < max)
 #endif
     if (size > 2) {
-#if defined(_OPENMP)
+/*#if defined(_OPENMP)
       MPI_Comm_rank(MPI_COMM_WORLD, &left_prc);
-#endif
+#endif*/
       auto tmp = new node{};
       tmp->build(data, first, mdn - (mdn > 0), axis);
       left_ptr.reset(tmp);
@@ -62,9 +66,9 @@ template <typename T> struct node {
 #pragma omp task shared(data) firstprivate(axis, last, mdn)// final(size < max)
 #endif
     {
-#if defined(_OPENMP)
+/*#if defined(_OPENMP)
       MPI_Comm_rank(MPI_COMM_WORLD, &right_prc);
-#endif
+#endif*/
       auto tmp = new node{};
       tmp->build(data, mdn + (mdn < last), last, axis);
       right_ptr.reset(tmp);
@@ -115,7 +119,7 @@ void print(const unique_ptr<T> &root, unsigned short space) {
   print(root->left_ptr, space);
 }
 
-#if defined(_OPENMP)
+/*#if defined(_OPENMP)
 // High level interface to travel the tree even if it is distributed among
 // different processes that do not share the same memory
 template <typename T> int left(T *&head, int master) {
@@ -171,5 +175,5 @@ template <typename T> T find_node(T head, int master, int slave) {
 
   return common_node;
 }
-#endif
+#endif*/
 #endif

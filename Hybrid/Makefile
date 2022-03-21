@@ -5,7 +5,7 @@ EXE = tree.x
 CXX = mpic++
 
 # Flags for the compiler
-CXXFLAGS = -std=c++14 -I include
+CXXFLAGS = -std=c++14 -O3 -I include
 FLAG =
 
 # Conditional flag

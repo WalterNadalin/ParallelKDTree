@@ -1,0 +1,27 @@
+rm src/*.o tree.x
+mpic++ -c src/info.cpp -o src/info.o -std=c++14 -O3 -I include -fopenmp
+mpic++ -c tree.cpp -o tree.o -std=c++14 -O3 -I include -fopenmp
+mpic++ tree.o src/info.o -o tree.x -fopenmp
+
+Processor 0 running on node ct1pt-tnode006
+
+4 threads in execution | The places are cores with a close binding policy
+--------------------------------------------------------------------------------
+Additional info for each thread: 
+Thread number 0 in place number 0 | Processors here: 0 
+Thread number 1 in place number 1 | Processors here: 2 
+Thread number 2 in place number 2 | Processors here: 4 
+Thread number 3 in place number 3 | Processors here: 6 
+--------------------------------------------------------------------------------
+
+Processor 1 running on node ct1pt-tnode006
+
+4 threads in execution | The places are cores with a close binding policy
+--------------------------------------------------------------------------------
+Additional info for each thread: 
+Thread number 0 in place number 0 | Processors here: 1 
+Thread number 1 in place number 1 | Processors here: 3 
+Thread number 2 in place number 2 | Processors here: 5 
+Thread number 3 in place number 3 | Processors here: 7 
+--------------------------------------------------------------------------------
+
