@@ -30,7 +30,6 @@ If the serial version hase been compiled, to run the serial version with `k` dim
 ```
 
 `command` allows to decide which information to print:
-
 	- `print`: prints the $k$-d tree data structure on terminal;
 	- `time`: prints the construction and execution time ;
 	- `info`: prints the times and other information about the threads;
