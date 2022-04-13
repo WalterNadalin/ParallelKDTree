@@ -12,3 +12,5 @@ In order to simplify the task, the following 2 assumptions hold:
 
   1. the data set, and hence the related *k*-d tree, can be assumed immutable, i.e. you can neglect the insertion/deletion operations;
   2. the data points can be assumed to be homogeneously distributed in all the *k* dimensions.
+
+More info at https://github.com/WalterNadalin/Foundations_of_HPC_2021/tree/main/Assignment2.
