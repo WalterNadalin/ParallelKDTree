@@ -2,7 +2,7 @@
 *Second Foundation of High Performance Computing assignment - University of Trieste - Academic Year 2021/2022*
 
 ## Build a *k*-d tree for 2-dimensional data
-**Remark**: read `report.pdf` for a detailed explnation of the project and the results.
+**Remark**: read `report.pdf` for a detailed explanation of the project and the results.
 
 *k*-d trees are a data structures presented originally by Friedman, Bentley and Finkel in 1977 to represent a set of *k*-dimensional data in order to make them efficiently searchable.
 
