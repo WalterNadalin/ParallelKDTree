@@ -6,7 +6,7 @@ This is an education project. Details follow.
 
 *k*-d trees are a data structures presented originally by Friedman, Bentley and Finkel in 1977 to represent a set of *k*-dimensional data in order to make them efficiently searchable.
 
-In spite of its age, or more likely thanks to it and to the large amount of research and improvements accumulated in time, *k*-d trees are still a good pragmatical choice to perform knn (*k*-nearest neighbours) operations in many cases.
+In spite of its age, or more likely thanks to it and to the large amount of research and improvements accumulated in time, *k*-d trees are still a good pragmatical choice to perform *k*nn (*k*-nearest neighbours) operations in many cases.
 
 The goal of this project is to write a parallel code that builds a *k*-d tree for *k=2*. In particular, it will be implemented a **hybrid MPI-OpenMP  version**.
 
