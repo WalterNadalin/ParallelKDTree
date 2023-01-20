@@ -29,7 +29,7 @@ If the serial version hase been compiled, to run the serial version with `h` 2 d
 .\kdtree.x <h> <command>
 ```
 	
-To run the parallel version with a number of `h` 2-dimensional points, `m` processes and `n` threads use the command:
+To run the parallel version with a number `h` of 2-dimensional points, `m` of processes and `n` of threads, use the command:
 
 ```bash
 mpirun -np <m> .\kdtree.x <h> <command> <n>
