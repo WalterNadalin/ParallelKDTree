@@ -28,13 +28,6 @@ If the serial version hase been compiled, to run the serial version with `h` 2 d
 ```bash
 .\kdtree.x <h> <command>
 ```
-
-`command` allows to decide which information to print:
-
-- `print`: prints the *k*-d tree data structure on terminal;
-- `time`: prints the construction and execution time ;
-- `info`: prints the times and other information about the threads;
-- `all`: prints all the above.
 	
 To run the parallel version with a number of `h` 2-dimensional points, `m` processes and `n` threads use the command:
 
@@ -43,6 +36,13 @@ mpirun -np <m> .\kdtree.x <h> <command> <n>
 ```
 
 and that should do the trick.
+
+`command` allows to decide which information to print:
+
+- `print`: prints the *k*-d tree data structure on terminal;
+- `time`: prints the construction and execution time ;
+- `info`: prints the times and other information about the threads;
+- `all`: prints all the above.
 
 ## Output
 The program will produce a different output based on the preferences of the user (see above).
