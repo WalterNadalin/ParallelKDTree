@@ -43,6 +43,3 @@ and that should do the trick.
 - `time`: prints the construction and execution time ;
 - `info`: prints the times and other information about the threads;
 - `all`: prints all the above.
-
-## Output
-The program will produce a different output based on the preferences of the user (see above).
